@@ -24,6 +24,7 @@ public:
     void begin();  // like setup
     void handle(); // like loop
 
+    bool HabilitarDebug;
     bool get_ServerMode_ON() const;                                       // Método getter para ServerMode_ON
     void printMSG(const String &_msg, bool newline, bool _debug = false); // Serial Monitor personalizado
 

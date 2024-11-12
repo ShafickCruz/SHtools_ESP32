@@ -16,12 +16,22 @@ const String ParamChecksum = "checksum";
 String controle_testeNovoFirmware_detalhe = "";
 int controle_testeNovoFirmware = 1; // 1 = pong
 
-bool HabilitarDebug = true;
-
 SHtools_ESP32::SHtools_ESP32(int ledPin, int buttonPin, String nomeSketch)
-    : ServerMode_ON(false), restartSolicitado(false), ServerModeInicio(0), buttonPressTime(0), lastButtonStateChangeTime(0), longPressDuration(3000),
-      debounceDelay(50), lastButtonState(HIGH), ledPin(ledPin), buttonPin(buttonPin),
-      nomeSketch(nomeSketch), DebugInicial(0), server(80), ws("/ws_rota") {}
+    : HabilitarDebug(false),
+      ServerMode_ON(false),
+      restartSolicitado(false),
+      ServerModeInicio(0),
+      buttonPressTime(0),
+      lastButtonStateChangeTime(0),
+      longPressDuration(3000),
+      debounceDelay(50),
+      lastButtonState(HIGH),
+      ledPin(ledPin),
+      buttonPin(buttonPin),
+      nomeSketch(nomeSketch),
+      DebugInicial(0),
+      server(80),
+      ws("/ws_rota") {}
 
 void SHtools_ESP32::begin()
 {
