@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <link rel="icon" href="/img/favicon.ico" type="image/x-icon" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SHtools - Serial</title>
+    <link rel="stylesheet" href="serial_style.css" />
+    <script src="serial_script.js" defer></script>
+  </head>
+  <body class="light-theme">
+    <div class="navbar">
+      <div>SHtools - Serial</div>
+      <div class="theme-toggle" style="margin-left: auto">
+        <label>Tema:</label>
+        <div class="segmented-control">
+          <button onclick="setTheme('light')" class="active">Light</button>
+          <button onclick="setTheme('dark')">Dark</button>
+        </div>
+      </div>
+      <button onclick="clearLogs()">Limpar</button>
+      <button onclick="exportLogs()">Exportar</button>
+      <a href="javascript:history.back()">
+        <button>Voltar</button>
+      </a>
+    </div>
+
+    <div class="main-content" id="log">
+      <div class="log-header" id="logHeader">
+        <!-- O cabeçalho será atualizado pelo JavaScript -->
+      </div>
+    </div>
+
+    <div class="footer">
+      <input type="text" id="command" placeholder="Digite aqui o comando" />
+      <button onclick="sendCommand()">Enviar</button>
+      <div class="auto-scroll-container">
+        <input type="checkbox" id="autoScrollToggle" checked />
+        <label for="autoScrollToggle">Auto Scroll</label>
+      </div>
+    </div>
+  </body>
+</html>

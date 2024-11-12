@@ -1,0 +1,56 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f8ff;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: dodgerblue;
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+header button {
+    background-color: white;
+    border: 1px solid dodgerblue;
+    color: dodgerblue;
+    padding: 8px 16px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+header button:hover {
+    background-color: lightblue;
+}
+
+main {
+    padding: 20px;
+}
+
+.command {
+    background-color: #e6f7ff;
+    border-left: 5px solid dodgerblue;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.command-title {
+    font-weight: bold;
+    font-size: 18px;
+    color: dodgerblue;
+}
+
+.command-description {
+    font-size: 16px;
+    margin-top: 5px;
+}

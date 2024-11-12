@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <link rel="icon" href="/img/favicon.ico" type="image/x-icon" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ESP32 Control Panel</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <h1>SHtools ESP32 UPDATE</h1>
+    <a href="ota/ota.html" class="button">Update OTA</a><br />
+    <a href="serial/serial.html" class="button">Monitor Serial</a><br />
+    <a href="serial/cmd.html" class="button">Comandos</a><br />
+    <button class="button" onclick="showInfo()">Informações</button>
+
+    <div id="infoModal" class="modal">
+      <div class="modal-content">
+        <span class="close">X</span>
+        <iframe
+          src="info.html"
+          frameborder="0"
+          style="width: 100%; height: 400px"
+        ></iframe>
+      </div>
+    </div>
+  </body>
+</html>
