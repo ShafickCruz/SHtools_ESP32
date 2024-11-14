@@ -439,6 +439,8 @@ bool SHtools_ESP32::WifiSetup()
   unsigned long startTime = millis();  // Armazena o tempo de início
   const unsigned long timeout = 10000; // Tempo limite de 10 segundos
 
+  WiFi.persistent(false); // Desativa a persistência das configurações do Wi-Fi para proteger a memoria flash
+
   while (!WiFi.softAP(ssid.c_str()))
   {
     printMSG(".", false);
