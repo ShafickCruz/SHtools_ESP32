@@ -9,22 +9,7 @@ Dependency Graph
 
 #include "SHtools_ESP32.h"
 
-/*****************************/
-/***** Binário WebServer *****/
-/*****************************/
-#include "cmd_html.h"
-#include "favicon_ico.h"
-#include "index_html.h"
-#include "info_html.h"
-#include "ota_html.h"
-#include "script_js.h"
-#include "serial_html.h"
-#include "sha_js.h"
-#include "style_css.h"
-
-/*****************************/
 /******** Preferences ********/
-/*****************************/
 // Limite máximo de 15 caracteres para Namespace e Key
 const char *PrefNameSpace_config = "_config";
 const char *PrefKey_configOK = "_configOK";
@@ -337,6 +322,9 @@ bool SHtools_ESP32::ServerMode()
 void SHtools_ESP32::rotasEcallbacks()
 {
 
+  //
+  // Status do server - PingPong
+  //
   server.on("/server_status", HTTP_GET, [this](AsyncWebServerRequest *request)
             {
               // Verificar se o cabeçalho personalizado está presente
@@ -412,15 +400,6 @@ void SHtools_ESP32::rotasEcallbacks()
             { OTA_FirmwareUpdate(request, filename, index, data, len, final); });
 
   //
-  // SERVIR ARQUIVOS ESTATICOS SEM ROTAS PERSONALIZADAS
-  //
-  // server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
-  // server.serveStatic("/img", LittleFS, "/img");
-  // server.serveStatic("/libs", LittleFS, "/libs");
-  // server.serveStatic("/ota", LittleFS, "/ota").setDefaultFile("ota.html");
-  // server.serveStatic("/serial", LittleFS, "/serial").setDefaultFile("serial.html");
-
-  //
   // WEBSOCKET
   //
 
@@ -445,12 +424,9 @@ void SHtools_ESP32::rotasEcallbacks()
                 break;
         } });
 
-  RotasBinarios();
-}
-
-void SHtools_ESP32::RotasBinarios()
-{
-  // Definir cada rota para servir o respectivo arquivo binário
+  //
+  // BINARIOS: Rota para servir os arquivos binarios
+  //
   server.on("/cmd.html", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send_P(200, "text/html", cmd_html, cmd_html_len); });
 

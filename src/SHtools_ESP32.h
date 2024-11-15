@@ -18,27 +18,16 @@
 #include <mbedtls/sha256.h>
 #include <pgmspace.h> // Necessário para PROGMEM
 
-// Declaração dos arrays para cada arquivo do webserver
-extern unsigned char cmd_html[] PROGMEM;
-extern unsigned int cmd_html_len;
-extern unsigned char index_html PROGMEM[];
-extern unsigned int index_html_len;
-extern unsigned char info_html PROGMEM[];
-extern unsigned int info_html_len;
-extern unsigned char ota_html PROGMEM[];
-extern unsigned int ota_html_len;
-extern unsigned char serial_html PROGMEM[];
-extern unsigned int serial_html_len;
-
-extern unsigned char script_js PROGMEM[];
-extern unsigned int script_js_len;
-extern unsigned char sha_js PROGMEM[];
-extern unsigned int sha_js_len;
-extern unsigned char style_css PROGMEM[];
-extern unsigned int style_css_len;
-
-extern unsigned char favicon_ico PROGMEM[];
-extern unsigned int favicon_ico_len;
+// Include dos arquivos binarios para o webserver
+#include "cmd_html.h"
+#include "favicon_ico.h"
+#include "index_html.h"
+#include "info_html.h"
+#include "ota_html.h"
+#include "script_js.h"
+#include "serial_html.h"
+#include "sha_js.h"
+#include "style_css.h"
 
 class SHtools_ESP32
 {
@@ -81,7 +70,6 @@ private:
     bool SerialCMD(String _cmd);
     bool WifiSetup();
     void rotasEcallbacks();
-    void RotasBinarios();
     String generateSSID(); // Gera SSID
     void ReiniciarESP(int _tempoDelay = 1000);
     void OTA_FirmwareUpdate(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final);
