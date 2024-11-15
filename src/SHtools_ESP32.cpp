@@ -1,5 +1,31 @@
+/*
+Dependency Graph
+|-- ESP Async WebServer @ 1.2.4
+|-- LittleFS @ 2.0.0
+|-- AsyncTCP @ 1.1.1
+|-- Preferences @ 2.0.0
+|-- Update @ 2.0.0
+|-- WiFi @ 2.0.0
+*/
+
 #include "SHtools_ESP32.h"
 
+/*****************************/
+/***** Binário WebServer *****/
+/*****************************/
+#include "cmd_html.h"
+#include "favicon_icon.h"
+#include "index_html.h"
+#include "info_html.h"
+#include "ota_html.h"
+#include "script_js.h"
+#include "serial_html.h"
+#include "sha_js.h"
+#include "style_css.h"
+
+/*****************************/
+/******** Preferences ********/
+/*****************************/
 // Limite máximo de 15 caracteres para Namespace e Key
 const char *PrefNameSpace_config = "_config";
 const char *PrefKey_configOK = "_configOK";
@@ -288,11 +314,13 @@ bool SHtools_ESP32::ServerMode()
     return false;
   }
 
+  /*
   if (!LittleFS.begin(true)) // monta estrutura de arquivos
   {
     printMSG("Falha ao montar LittleFS!", true);
     return false;
   }
+  */
 
   server.addHandler(&ws); // Inicializa o WebSocket
 
@@ -387,11 +415,11 @@ void SHtools_ESP32::rotasEcallbacks()
   //
   // SERVIR ARQUIVOS ESTATICOS SEM ROTAS PERSONALIZADAS
   //
-  server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
-  server.serveStatic("/img", LittleFS, "/img");
-  server.serveStatic("/libs", LittleFS, "/libs");
-  server.serveStatic("/ota", LittleFS, "/ota").setDefaultFile("ota.html");
-  server.serveStatic("/serial", LittleFS, "/serial").setDefaultFile("serial.html");
+  // server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
+  // server.serveStatic("/img", LittleFS, "/img");
+  // server.serveStatic("/libs", LittleFS, "/libs");
+  // server.serveStatic("/ota", LittleFS, "/ota").setDefaultFile("ota.html");
+  // server.serveStatic("/serial", LittleFS, "/serial").setDefaultFile("serial.html");
 
   //
   // WEBSOCKET
@@ -417,6 +445,39 @@ void SHtools_ESP32::rotasEcallbacks()
             default:
                 break;
         } });
+
+  RotasBinarios();
+}
+
+void SHtools_ESP32::RotasBinarios()
+{
+  // Definir cada rota para servir o respectivo arquivo binário
+  server.on("/cmd.html", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send_P(200, "text/html", cmd_html, cmd_html_len); });
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send_P(200, "text/html", index_html, index_html_len); });
+
+  server.on("/info.html", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send_P(200, "text/html", info_html, info_html_len); });
+
+  server.on("/ota.html", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send_P(200, "text/html", ota_html, ota_html_len); });
+
+  server.on("/serial.html", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send_P(200, "text/html", serial_html, serial_html_len); });
+
+  server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send_P(200, "application/javascript", script_js, script_js_len); });
+
+  server.on("/sha.js", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send_P(200, "application/javascript", sha_js, sha_js_len); });
+
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send_P(200, "text/css", style_css, style_css_len); });
+
+  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send_P(200, "image/x-icon", favicon_ico, favicon_ico_len); });
 }
 
 bool SHtools_ESP32::WifiSetup()
@@ -569,10 +630,8 @@ String SHtools_ESP32::obterInformacoesPlaca()
   info.bt = chip_info.features & CHIP_FEATURE_BT;
 
   // Calcular flash disponível
-  uint32_t totalBytes = LittleFS.totalBytes();
-  uint32_t usedBytes = LittleFS.usedBytes();
-  uint32_t firmwareSize = ESP.getSketchSize();
-  info.flashDisponivel = String((totalBytes - usedBytes - firmwareSize) / 1024); // KB
+  //uint32_t totalBytes = spi_flash_get_chip_size();
+  info.flashDisponivel = String((ESP.getFlashChipSize() - ESP.getSketchSize()) / 1024); // KB
 
   // Montagem manual do objeto JSON
   json = "{";

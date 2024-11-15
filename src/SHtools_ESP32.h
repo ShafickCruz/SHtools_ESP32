@@ -9,13 +9,35 @@
 #include <Update.h>
 #include <esp_ota_ops.h>
 #include <Preferences.h>
-#include <FS.h>
-#include <LittleFS.h>
+//#include <FS.h>
+//#include <LittleFS.h>
 #include <esp_system.h>
 #include <esp_chip_info.h>
 #include <esp_spi_flash.h>
 #include <soc/rtc.h>
 #include <mbedtls/sha256.h>
+
+// Declaração dos arrays para cada arquivo do webserver
+extern unsigned char cmd_html[];
+extern unsigned int cmd_html_len;
+extern unsigned char index_html[];
+extern unsigned int index_html_len;
+extern unsigned char info_html[];
+extern unsigned int info_html_len;
+extern unsigned char ota_html[];
+extern unsigned int ota_html_len;
+extern unsigned char serial_html[];
+extern unsigned int serial_html_len;
+
+extern unsigned char script_js[];
+extern unsigned int script_js_len;
+extern unsigned char sha_js[];
+extern unsigned int sha_js_len;
+extern unsigned char style_css[];
+extern unsigned int style_css_len;
+
+extern unsigned char favicon_ico[];
+extern unsigned int favicon_ico_len;
 
 class SHtools_ESP32
 {
@@ -58,6 +80,7 @@ private:
     bool SerialCMD(String _cmd);
     bool WifiSetup();
     void rotasEcallbacks();
+    void RotasBinarios();
     String generateSSID(); // Gera SSID
     void ReiniciarESP(int _tempoDelay = 1000);
     void OTA_FirmwareUpdate(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final);
