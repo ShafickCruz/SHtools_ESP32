@@ -35,7 +35,6 @@ Arduino
 WiFi
 AsyncTCP
 ESPAsyncWebServer
-littlefs
 ```
 
 ## Uso
