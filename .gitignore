@@ -5,4 +5,5 @@
 .vscode/launch.json
 .vscode/ipch
 /logs
+/old-data
 TO-DO.txt
