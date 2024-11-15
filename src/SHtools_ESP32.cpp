@@ -323,6 +323,8 @@ bool SHtools_ESP32::ServerMode()
   */
 
   server.addHandler(&ws); // Inicializa o WebSocket
+  ws.setPingInterval(1500000);  // Define o intervalo de envio de ping para saber quais clientes estão inativos e
+  ws.setPingTimeout(10000);  // Define o timeout de 5 segundos para esperar a resposta do pong
 
   rotasEcallbacks(); // define rotas e callbacks
 
