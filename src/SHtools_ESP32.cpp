@@ -14,7 +14,7 @@ Dependency Graph
 /***** Binário WebServer *****/
 /*****************************/
 #include "cmd_html.h"
-#include "favicon_icon.h"
+#include "favicon_ico.h"
 #include "index_html.h"
 #include "info_html.h"
 #include "ota_html.h"

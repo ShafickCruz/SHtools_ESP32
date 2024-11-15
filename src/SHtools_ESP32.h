@@ -16,27 +16,28 @@
 #include <esp_spi_flash.h>
 #include <soc/rtc.h>
 #include <mbedtls/sha256.h>
+#include <pgmspace.h> // Necessário para PROGMEM
 
 // Declaração dos arrays para cada arquivo do webserver
-extern unsigned char cmd_html[];
+extern unsigned char cmd_html[] PROGMEM;
 extern unsigned int cmd_html_len;
-extern unsigned char index_html[];
+extern unsigned char index_html PROGMEM[];
 extern unsigned int index_html_len;
-extern unsigned char info_html[];
+extern unsigned char info_html PROGMEM[];
 extern unsigned int info_html_len;
-extern unsigned char ota_html[];
+extern unsigned char ota_html PROGMEM[];
 extern unsigned int ota_html_len;
-extern unsigned char serial_html[];
+extern unsigned char serial_html PROGMEM[];
 extern unsigned int serial_html_len;
 
-extern unsigned char script_js[];
+extern unsigned char script_js PROGMEM[];
 extern unsigned int script_js_len;
-extern unsigned char sha_js[];
+extern unsigned char sha_js PROGMEM[];
 extern unsigned int sha_js_len;
-extern unsigned char style_css[];
+extern unsigned char style_css PROGMEM[];
 extern unsigned int style_css_len;
 
-extern unsigned char favicon_ico[];
+extern unsigned char favicon_ico PROGMEM[];
 extern unsigned int favicon_ico_len;
 
 class SHtools_ESP32
