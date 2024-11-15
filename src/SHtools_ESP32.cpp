@@ -1,7 +1,6 @@
 /*
 Dependency Graph
 |-- ESP Async WebServer @ 1.2.4
-|-- LittleFS @ 2.0.0
 |-- AsyncTCP @ 1.1.1
 |-- Preferences @ 2.0.0
 |-- Update @ 2.0.0
