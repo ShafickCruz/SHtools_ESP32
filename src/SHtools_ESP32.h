@@ -32,13 +32,25 @@
 class SHtools_ESP32
 {
 public:
-    SHtools_ESP32(int ledPin, int buttonPin, String nomeSketch);
+    /**
+     * @brief Criar uma instância da classe da biblioteca
+     * @param _ledPin GPIO usado para controle do led (comunmente LED_BUILTIN)
+     * @param _buttonPin GPIO utilizado para o botão que aciona o modo servidor (GPIO<->GND)
+     * @param _nomeSketch Nome que será apresentado no SSID (parcialmente se for grande)
+     * @param _wifiOFF Se true, irá desligar completamente o radio WIFI quando não estiver em modo servidor.
+     * Se false (default), desconectará o WiFi da rede mas permanecerá com radio ligado. (necessário para usod e EspNow)
+     * @return void
+     * @note
+     * @warning Não desligue o radio WiFi se for usar EspNow
+     */
+    SHtools_ESP32(int _ledPin, int _buttonPin, String _nomeSketch, bool _wifiOFF = false);
     void begin();  // like setup
     void handle(); // like loop
 
     bool HabilitarDebug;
     bool get_ServerMode_ON() const;                                       // Método getter para ServerMode_ON
     void printMSG(const String &_msg, bool newline, bool _debug = false); // Serial Monitor personalizado
+    void printDEBUG(String _msg);
 
     // Getters para server e websocket
     AsyncWebServer &get_server();
@@ -57,6 +69,7 @@ private:
     int ledPin;
     int buttonPin;
     String nomeSketch;
+    bool wifiOFF;
     bool DebugInicial;
     AsyncWebServer server; // Declaração do servidor como membro da classe
     AsyncWebSocket ws;     // Declaração do WebSocket como membro da classe

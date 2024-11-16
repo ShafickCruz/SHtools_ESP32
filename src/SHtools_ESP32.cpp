@@ -26,7 +26,7 @@ const String ParamChecksum = "checksum";
 String controle_testeNovoFirmware_detalhe = "";
 int controle_testeNovoFirmware = 1; // 1 = pong
 
-SHtools_ESP32::SHtools_ESP32(int ledPin, int buttonPin, String nomeSketch)
+SHtools_ESP32::SHtools_ESP32(int _ledPin, int _buttonPin, String _nomeSketch, bool _wifiOFF)
     : HabilitarDebug(true),
       ServerMode_ON(false),
       restartSolicitado(false),
@@ -36,9 +36,10 @@ SHtools_ESP32::SHtools_ESP32(int ledPin, int buttonPin, String nomeSketch)
       longPressDuration(3000),
       debounceDelay(50),
       lastButtonState(HIGH),
-      ledPin(ledPin),
-      buttonPin(buttonPin),
-      nomeSketch(nomeSketch),
+      ledPin(_ledPin),
+      buttonPin(_buttonPin),
+      nomeSketch(_nomeSketch),
+      wifiOFF(_wifiOFF),
       DebugInicial(0),
       server(80),
       ws("/ws_rota") {}
@@ -58,9 +59,7 @@ void SHtools_ESP32::begin()
   // Cliente web não está esperando resposta
   if (preferencias(2, PrefKey_novoFirmware) && !preferencias(2, PrefKey_testeNovoFirmware))
   {
-
-    if (HabilitarDebug)
-      printMSG("DETECTADO NOVO FIRMWARE SEM SOLICITAÇÃO DE TESTES", true, true); // DEBUG
+    printDEBUG("DETECTADO NOVO FIRMWARE SEM SOLICITAÇÃO DE TESTES");
 
     // desmarca novo firmware em preferencias
     preferencias(1, PrefKey_novoFirmware, false);
@@ -89,7 +88,7 @@ void SHtools_ESP32::handle()
 
     if ((millis() - testeUltimoTempo) >= IntervaloTeste)
     {
-      printMSG("SERVERMODE ON = " + String(ServerMode_ON), true, true); // DEBUG
+      printDEBUG("SERVERMODE ON = " + String(ServerMode_ON));
       testeUltimoTempo = millis();
     }
   }
@@ -109,8 +108,7 @@ void SHtools_ESP32::handle()
     {
       startServerMode(!(preferencias(2, PrefKey_testeNovoFirmware)));
 
-      if (HabilitarDebug)
-        printMSG("SUCESSO NA INICIALIZAÇÃO DE SERVERMODE OU FALHA + SOLICITAÇÃO DE TESTE DE NOVO FIRMWARE", true, true); // DEBUG
+      printDEBUG("SUCESSO NA INICIALIZAÇÃO DE SERVERMODE OU FALHA + SOLICITAÇÃO DE TESTE DE NOVO FIRMWARE");
 
       /*
       Se chegoun até aqui é porque startServerMode obteve sucesso ou
@@ -131,8 +129,7 @@ void SHtools_ESP32::handle()
       {
         if (preferencias(2, PrefKey_testeNovoFirmware, true)) // teste de novo firmware obteve sucesso
         {
-          if (HabilitarDebug)
-            printMSG("SUCESSO NO TESTE DE NOVO FIRMWARE", true, true); // DEBUG
+          printDEBUG("SUCESSO NO TESTE DE NOVO FIRMWARE");
 
           // desmarca novo firmware em preferencias
           preferencias(1, PrefKey_novoFirmware, false);
@@ -162,8 +159,7 @@ void SHtools_ESP32::handle()
       else
       // ServerMode_ON sendo false e não havido boot no processo de ServerMode, significa que teste de novo firmware falhou
       {
-        if (HabilitarDebug)
-          printMSG("FALHA NO TESTE DE NOVO FIRMWARE", true, true); // DEBUG
+        printDEBUG("FALHA NO TESTE DE NOVO FIRMWARE");
 
         printMSG("Teste de novo firmware falhou. Iniciando tentativa de roolback.", true);
         // sem possibilidades de informar ao web cliente
@@ -181,8 +177,7 @@ void SHtools_ESP32::handle()
         */
         preferencias(1, PrefKey_fezRollback, true);
 
-        if (HabilitarDebug)
-          printMSG("INICIO DE ROLLBACK SEGUIDO DE RESTART", true, true); // DEBUG
+        printDEBUG("INICIO DE ROLLBACK SEGUIDO DE RESTART");
 
         // Mark firmware as invalid and rollback to previous firmware
         esp_err_t err = esp_ota_mark_app_invalid_rollback_and_reboot();
@@ -471,7 +466,7 @@ bool SHtools_ESP32::WifiSetup()
   // desconecta WiFi
   if (WiFi.status() == WL_CONNECTED)
   {
-    WiFi.disconnect();
+    WiFi.disconnect(wifiOFF, true);
     delayYield(2000);
   }
 
@@ -486,7 +481,7 @@ bool SHtools_ESP32::WifiSetup()
   unsigned long startTime = millis();  // Armazena o tempo de início
   const unsigned long timeout = 10000; // Tempo limite de 10 segundos
 
-  // WiFi.persistent(false); // Desativa a persistência das configurações do Wi-Fi para proteger a memoria flash
+  WiFi.persistent(false); // Desativa a persistência das configurações do Wi-Fi para não desgastar a memoria flash
 
   while (!WiFi.softAP(ssid.c_str()))
   {
@@ -885,19 +880,27 @@ bool SHtools_ESP32::SerialCMD(String _cmd)
   }
 }
 
+void SHtools_ESP32::printDEBUG(String _msg)
+{
+  if (HabilitarDebug)
+  {
+    printMSG(_msg, true, true);
+  }
+}
+
 /// @brief Soft restart: Finaliza recusroso ativos e efetua restart do sistema
 /// @param _tempoDelay Milesegundos (deafulr 1000)
 void SHtools_ESP32::ReiniciarESP(int _tempoDelay)
 {
-  ws.closeAll();           // Fecha todas as conexões WebSocket, ignorando erros
-  delayYield(50);          // delay de segurança
-  server.end();            // Para o servidor, ignorando erros
-  delayYield(50);          // delay de segurança
-  WiFi.disconnect();       // Desconecta o WiFi, ignorando erros
-  delayYield(50);          // delay de segurança
-  Serial.flush();          // Garante que todos os dados da Serial sejam enviados
-  delayYield(_tempoDelay); // Atraso opcional antes do reinício
-  ESP.restart();           // Reinicia o ESP
+  ws.closeAll();               // Fecha todas as conexões WebSocket, ignorando erros
+  delayYield(50);              // delay de segurança
+  server.end();                // Para o servidor, ignorando erros
+  delayYield(50);              // delay de segurança
+  WiFi.disconnect(true, true); // Desconecta o WiFi, ignorando erros
+  delayYield(50);              // delay de segurança
+  Serial.flush();              // Garante que todos os dados da Serial sejam enviados
+  delayYield(_tempoDelay);     // Atraso opcional antes do reinício
+  ESP.restart();               // Reinicia o ESP
 }
 
 void SHtools_ESP32::delayYield(unsigned long ms)
