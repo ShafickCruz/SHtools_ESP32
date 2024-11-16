@@ -27,7 +27,7 @@ String controle_testeNovoFirmware_detalhe = "";
 int controle_testeNovoFirmware = 1; // 1 = pong
 
 SHtools_ESP32::SHtools_ESP32(int ledPin, int buttonPin, String nomeSketch)
-    : HabilitarDebug(false),
+    : HabilitarDebug(true),
       ServerMode_ON(false),
       restartSolicitado(false),
       ServerModeInicio(0),
@@ -59,7 +59,8 @@ void SHtools_ESP32::begin()
   if (preferencias(2, PrefKey_novoFirmware) && !preferencias(2, PrefKey_testeNovoFirmware))
   {
 
-    printMSG("DETECTADO NOVO FIRMWARE SEM SOLICITAÇÃO DE TESTES", true, true); // debug
+    if (HabilitarDebug)
+      printMSG("DETECTADO NOVO FIRMWARE SEM SOLICITAÇÃO DE TESTES", true, true); // DEBUG
 
     // desmarca novo firmware em preferencias
     preferencias(1, PrefKey_novoFirmware, false);
@@ -86,6 +87,19 @@ void SHtools_ESP32::handle()
   */
   if (ServerMode_ON)
   {
+
+    if (HabilitarDebug) // DEBUG
+    {
+      const int IntervaloTeste = 3000;
+      static unsigned long testeUltimoTempo = millis();
+
+      if ((millis() - testeUltimoTempo) >= IntervaloTeste)
+      {
+        printMSG("SERVERMODE ON = " + String(ServerMode_ON), true, true); // DEBUG
+        testeUltimoTempo = millis();
+      }
+    }
+
     ServerMode_handle();
   }
   else
@@ -94,7 +108,8 @@ void SHtools_ESP32::handle()
     {
       startServerMode(!(preferencias(2, PrefKey_testeNovoFirmware)));
 
-      printMSG("SUCESSO NA INICIALIZAÇÃO DE SERVERMODE OU FALHA + SOLICITAÇÃO DE TESTE DE NOVO FIRMWARE", true, true); // debug
+      if (HabilitarDebug)
+        printMSG("SUCESSO NA INICIALIZAÇÃO DE SERVERMODE OU FALHA + SOLICITAÇÃO DE TESTE DE NOVO FIRMWARE", true, true); // DEBUG
 
       /*
       Se chegoun até aqui é porque startServerMode obteve sucesso ou
@@ -115,7 +130,8 @@ void SHtools_ESP32::handle()
       {
         if (preferencias(2, PrefKey_testeNovoFirmware, true)) // teste de novo firmware obteve sucesso
         {
-          printMSG("SUCESSO NO TESTE DE NOVO FIRMWARE", true, true); // debug
+          if (HabilitarDebug)
+            printMSG("SUCESSO NO TESTE DE NOVO FIRMWARE", true, true); // DEBUG
 
           // desmarca novo firmware em preferencias
           preferencias(1, PrefKey_novoFirmware, false);
@@ -145,7 +161,8 @@ void SHtools_ESP32::handle()
       else
       // ServerMode_ON sendo false e não havido boot no processo de ServerMode, significa que teste de novo firmware falhou
       {
-        printMSG("FALHA NO TESTE DE NOVO FIRMWARE", true, true); // debug
+        if (HabilitarDebug)
+          printMSG("FALHA NO TESTE DE NOVO FIRMWARE", true, true); // DEBUG
 
         printMSG("Teste de novo firmware falhou. Iniciando tentativa de roolback.", true);
         // sem possibilidades de informar ao web cliente
@@ -163,7 +180,8 @@ void SHtools_ESP32::handle()
         */
         preferencias(1, PrefKey_fezRollback, true);
 
-        printMSG("INICIO DE ROLLBACK SEGUIDO DE RESTART", true, true); // debug
+        if (HabilitarDebug)
+          printMSG("INICIO DE ROLLBACK SEGUIDO DE RESTART", true, true); // DEBUG
 
         // Mark firmware as invalid and rollback to previous firmware
         esp_err_t err = esp_ota_mark_app_invalid_rollback_and_reboot();
@@ -253,7 +271,7 @@ void SHtools_ESP32::bt_handle()
     digitalWrite(ledPin, !digitalRead(ledPin)); // apaga ou acende o led para indicar que o longpress foi reconhecido
     while (digitalRead(buttonPin) == LOW)
     {
-      delay(100);
+      delayYield(100);
     }
 
     // Tenta iniciar modo servidor e reinicia caso não consiga
@@ -280,7 +298,7 @@ void SHtools_ESP32::startServerMode(bool _softRestart)
     if (_softRestart)
     {
       printMSG("Restart em 5 segundos...", true);
-      delay(4000);
+      delayYield(4000);
       ReiniciarESP();
     }
   }
@@ -298,16 +316,8 @@ bool SHtools_ESP32::ServerMode()
     return false;
   }
 
-  /*
-  if (!LittleFS.begin(true)) // monta estrutura de arquivos
-  {
-    printMSG("Falha ao montar LittleFS!", true);
-    return false;
-  }
-  */
-
   server.addHandler(&ws); // Inicializa o WebSocket
-  
+
   rotasEcallbacks(); // define rotas e callbacks
 
   server.begin(); // Start webserver
@@ -461,7 +471,7 @@ bool SHtools_ESP32::WifiSetup()
   if (WiFi.status() == WL_CONNECTED)
   {
     WiFi.disconnect();
-    delay(2000);
+    delayYield(2000);
   }
 
   // Configura o servidor AP
@@ -480,7 +490,7 @@ bool SHtools_ESP32::WifiSetup()
   while (!WiFi.softAP(ssid.c_str()))
   {
     printMSG(".", false);
-    delay(100);
+    delayYield(100);
 
     // Verifica se o tempo limite foi atingido
     if (millis() - startTime > timeout)
@@ -605,7 +615,7 @@ String SHtools_ESP32::obterInformacoesPlaca()
   info.bt = chip_info.features & CHIP_FEATURE_BT;
 
   // Calcular flash disponível
-  //uint32_t totalBytes = spi_flash_get_chip_size();
+  // uint32_t totalBytes = spi_flash_get_chip_size();
   info.flashDisponivel = String((ESP.getFlashChipSize() - ESP.getSketchSize()) / 1024); // KB
 
   // Montagem manual do objeto JSON
@@ -718,7 +728,7 @@ void SHtools_ESP32::OTA_FirmwareUpdate(AsyncWebServerRequest *request, const Str
       printMSG(msgRetorno, true);
     }
 
-    delay(2000); // delay para dar tempo de enviar resposta antes do restart
+    delayYield(2000); // delay para dar tempo de enviar resposta antes do restart
 
     // Faz restart para ativar novo firmware
     if (Update.isFinished())
@@ -822,6 +832,7 @@ void SHtools_ESP32::printMSG(const String &_msg, bool newline, bool _debug)
     if (HabilitarDebug)
     {
       msg = "DEBUG >>> " + msg;
+      msg.toUpperCase();
     }
     else
     {
@@ -857,7 +868,7 @@ bool SHtools_ESP32::SerialCMD(String _cmd)
   {
     printMSG("Comando DebugInicial: " + String(DebugInicial) + " >>>>> " + String(!DebugInicial), true);
     DebugInicial = preferencias(1, PrefKey_debugInicial, !DebugInicial);
-    delay(1000);
+    delayYield();
     restartSolicitado = true;
     return true;
   }
@@ -877,13 +888,22 @@ bool SHtools_ESP32::SerialCMD(String _cmd)
 /// @param _tempoDelay Milesegundos (deafulr 1000)
 void SHtools_ESP32::ReiniciarESP(int _tempoDelay)
 {
-  ws.closeAll();      // Fecha todas as conexões WebSocket, ignorando erros
-  delay(50);          // delay de segurança
-  server.end();       // Para o servidor, ignorando erros
-  delay(50);          // delay de segurança
-  WiFi.disconnect();  // Desconecta o WiFi, ignorando erros
-  delay(50);          // delay de segurança
-  Serial.flush();     // Garante que todos os dados da Serial sejam enviados
-  delay(_tempoDelay); // Atraso opcional antes do reinício
-  ESP.restart();      // Reinicia o ESP
+  ws.closeAll();           // Fecha todas as conexões WebSocket, ignorando erros
+  delayYield(50);          // delay de segurança
+  server.end();            // Para o servidor, ignorando erros
+  delayYield(50);          // delay de segurança
+  WiFi.disconnect();       // Desconecta o WiFi, ignorando erros
+  delayYield(50);          // delay de segurança
+  Serial.flush();          // Garante que todos os dados da Serial sejam enviados
+  delayYield(_tempoDelay); // Atraso opcional antes do reinício
+  ESP.restart();           // Reinicia o ESP
+}
+
+void SHtools_ESP32::delayYield(unsigned long ms)
+{
+  unsigned long start = millis();
+  while (millis() - start < ms)
+  {
+    yield();
+  }
 }

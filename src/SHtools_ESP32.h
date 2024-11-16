@@ -9,14 +9,14 @@
 #include <Update.h>
 #include <esp_ota_ops.h>
 #include <Preferences.h>
-//#include <FS.h>
-//#include <LittleFS.h>
+// #include <FS.h>
+// #include <LittleFS.h>
 #include <esp_system.h>
 #include <esp_chip_info.h>
 #include <esp_spi_flash.h>
 #include <soc/rtc.h>
 #include <mbedtls/sha256.h>
-#include <pgmspace.h> // Necessário para PROGMEM
+#include <pgmspace.h> // Necessário para PROGMEM que esta sendo definido dentro dos arquivos binarios do webserver
 
 // Include dos arquivos binarios para o webserver
 #include "cmd_html.h"
@@ -72,6 +72,7 @@ private:
     void rotasEcallbacks();
     String generateSSID(); // Gera SSID
     void ReiniciarESP(int _tempoDelay = 1000);
+    void delayYield(unsigned long ms = 1000);
     void OTA_FirmwareUpdate(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final);
     String OTA_FirmwareUpdate_ChecksumFinal(mbedtls_sha256_context *ctx);
     bool preferencias(int8_t _opcao, const char *_chave = "", bool _valor = false);
