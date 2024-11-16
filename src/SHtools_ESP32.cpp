@@ -10,10 +10,10 @@ Dependency Graph
 #include "SHtools_ESP32.h"
 
 /******** Preferences ********/
-// Limite máximo de 15 caracteres para Namespace e Key
+// Limite máximo de 14 caracteres para Namespace e Key
 const char *PrefNameSpace_config = "_config";
 const char *PrefKey_configOK = "_configOK";
-const char *PrefKey_debugInicial = "DebugInicial";
+const char *PrefKey_serverMod_auto = "ServerMod_AUTO";
 const char *PrefKey_novoFirmware = "NovoFirmware";
 const char *PrefKey_testeNovoFirmware = "tstNewFirmware";
 const char *PrefKey_fezRollback = "fezRollback";
@@ -26,11 +26,12 @@ const String ParamChecksum = "checksum";
 String controle_testeNovoFirmware_detalhe = "";
 int controle_testeNovoFirmware = 1; // 1 = pong
 
-SHtools_ESP32::SHtools_ESP32(int _ledPin, int _buttonPin, String _nomeSketch, bool _wifiOFF)
+SHtools_ESP32::SHtools_ESP32(int _ledPin, int _buttonPin, String _nomeSketch, bool _WIFIradio_OFF)
     : HabilitarDebug(true),
-      ServerMode_ON(false),
+      ServerMod_ON(false),
+      ServerMod_AUTO(0),
       restartSolicitado(false),
-      ServerModeInicio(0),
+      ServerModInicio(0),
       buttonPressTime(0),
       lastButtonStateChangeTime(0),
       longPressDuration(3000),
@@ -39,8 +40,10 @@ SHtools_ESP32::SHtools_ESP32(int _ledPin, int _buttonPin, String _nomeSketch, bo
       ledPin(_ledPin),
       buttonPin(_buttonPin),
       nomeSketch(_nomeSketch),
-      wifiOFF(_wifiOFF),
-      DebugInicial(0),
+      WIFIradio_OFF(_WIFIradio_OFF),
+      rede_ip(192, 168, 100, 100),
+      rede_mask(255, 255, 255, 0),
+      rede_gateway(192, 168, 100, 1),
       server(80),
       ws("/ws_rota") {}
 
@@ -52,8 +55,8 @@ void SHtools_ESP32::begin()
 
   Serial.begin(115200);
 
-  preferencias(-1);                                     // monta config se não estiver montado
-  DebugInicial = preferencias(2, PrefKey_debugInicial); // Obtem o valor para DebugInicial
+  preferencias(-1);                                         // monta config se não estiver montado
+  ServerMod_AUTO = preferencias(2, PrefKey_serverMod_auto); // Obtem o valor para ServerMod_AUTO
 
   // Marca firmware como válido sem testar o firmware
   // Cliente web não está esperando resposta
@@ -88,7 +91,7 @@ void SHtools_ESP32::handle()
 
     if ((millis() - testeUltimoTempo) >= IntervaloTeste)
     {
-      printDEBUG("SERVERMODE ON = " + String(ServerMode_ON));
+      printDEBUG("SERVERMOD ON = " + String(ServerMod_ON));
       testeUltimoTempo = millis();
     }
   }
@@ -96,26 +99,26 @@ void SHtools_ESP32::handle()
 
   /*
   Se estiver no modo Servidor, faz o LED piscar continuamente e processa as requisições. Se não estiver, verifica se debug inicial está habilitado.
-  Se debug inicial estiver habilitado, inicia o processo de ServerMode e ignora o botão e se não estiver, keep watching o botão.
+  Se debug inicial estiver habilitado, inicia o processo de ServerMod e ignora o botão e se não estiver, keep watching o botão.
   */
-  if (ServerMode_ON)
+  if (ServerMod_ON)
   {
-    ServerMode_handle();
+    ServerMod_handle();
   }
   else
   {
-    if (DebugInicial)
+    if (ServerMod_AUTO)
     {
-      startServerMode(!(preferencias(2, PrefKey_testeNovoFirmware)));
+      startServerMod(!(preferencias(2, PrefKey_testeNovoFirmware)));
 
-      printDEBUG("SUCESSO NA INICIALIZAÇÃO DE SERVERMODE OU FALHA + SOLICITAÇÃO DE TESTE DE NOVO FIRMWARE");
+      printDEBUG("SUCESSO NA INICIALIZAÇÃO DE SERVERMOD OU FALHA + SOLICITAÇÃO DE TESTE DE NOVO FIRMWARE");
 
       /*
-      Se chegoun até aqui é porque startServerMode obteve sucesso ou
+      Se chegoun até aqui é porque startServerMod obteve sucesso ou
       teste de novo firmware está marcadao como true em preferences.
-      Quando startServerMode não obtem sucesso, ocorre restart em seu processo (ServerMode()).
+      Quando startServerMod não obtem sucesso, ocorre restart em seu processo (ServerMod()).
 
-      Formas de solicitar DebugInicial:
+      Formas de solicitar ServerMod_AUTO:
       - CMD (web cliente)
       - Botão físico
       - Teste de novo firmware (OTA)
@@ -125,7 +128,7 @@ void SHtools_ESP32::handle()
       TESTE DE NOVO FIRMWARE
       *********************/
 
-      if (ServerMode_ON)
+      if (ServerMod_ON)
       {
         if (preferencias(2, PrefKey_testeNovoFirmware, true)) // teste de novo firmware obteve sucesso
         {
@@ -157,7 +160,7 @@ void SHtools_ESP32::handle()
         }
       }
       else
-      // ServerMode_ON sendo false e não havido boot no processo de ServerMode, significa que teste de novo firmware falhou
+      // ServerMod_ON sendo false e não havido boot no processo de ServerMod, significa que teste de novo firmware falhou
       {
         printDEBUG("FALHA NO TESTE DE NOVO FIRMWARE");
 
@@ -202,7 +205,7 @@ void SHtools_ESP32::handle()
   }
 }
 
-void SHtools_ESP32::ServerMode_handle()
+void SHtools_ESP32::ServerMod_handle()
 {
 
   // Verifica se havia solicitação de teste de novo firmware e o mesmo falhou
@@ -220,14 +223,14 @@ void SHtools_ESP32::ServerMode_handle()
 
   /*
   Se está em modo servidor há mais de 30 minutos,
-  desativa o modo DebugInicial e reinicia o esp para sair do modo servidor
+  desativa o modo ServerMod_AUTO e reinicia o esp para sair do modo servidor
   */
-  if ((cTime - ServerModeInicio) >= 1800000) // 30 minutos
+  if ((cTime - ServerModInicio) >= 1800000) // 30 minutos
   {
     if (WiFi.softAPgetStationNum() == 0) // Verifica se há clientes conectados
     {
-      DebugInicial = preferencias(1, PrefKey_debugInicial, false); // Desativa DebugInicial
-      ReiniciarESP();                                              // Reinicia o ESP32
+      ServerMod_AUTO = preferencias(1, PrefKey_serverMod_auto, false); // Desativa ServerMod_AUTO
+      ReiniciarESP();                                                  // Reinicia o ESP32
     }
   }
 
@@ -271,24 +274,24 @@ void SHtools_ESP32::bt_handle()
     }
 
     // Tenta iniciar modo servidor e reinicia caso não consiga
-    startServerMode(true);
+    startServerMod(true);
   }
 
   // Atualiza o estado anterior do botão
   lastButtonState = currentButtonState;
 }
 
-void SHtools_ESP32::startServerMode(bool _softRestart)
+void SHtools_ESP32::startServerMod(bool _softRestart)
 {
-  if (!ServerMode())
+  if (!ServerMod())
   {
     printMSG("Falha ao iniciar modo servidor!", true);
 
-    // se DebugInicial estiver true e houver falha na inicialização do modo servidor,
-    // ficará em loop infinito. Para evitar, deve-se desativar o DebugInicial
-    if (DebugInicial)
+    // se ServerMod_AUTO estiver true e houver falha na inicialização do modo servidor,
+    // ficará em loop infinito. Para evitar, deve-se desativar o ServerMod_AUTO
+    if (ServerMod_AUTO)
     {
-      DebugInicial = preferencias(1, PrefKey_debugInicial, false);
+      ServerMod_AUTO = preferencias(1, PrefKey_serverMod_auto, false);
     }
 
     if (_softRestart)
@@ -300,9 +303,9 @@ void SHtools_ESP32::startServerMode(bool _softRestart)
   }
 }
 
-bool SHtools_ESP32::ServerMode()
+bool SHtools_ESP32::ServerMod()
 {
-  ServerMode_ON = false;
+  ServerMod_ON = false;
 
   printMSG("Entrando em modo Servidor...", true);
 
@@ -319,8 +322,8 @@ bool SHtools_ESP32::ServerMode()
   server.begin(); // Start webserver
 
   printMSG("Servidor iniciado", true);
-  ServerMode_ON = true;
-  ServerModeInicio = millis();
+  ServerMod_ON = true;
+  ServerModInicio = millis();
 
   return true;
 }
@@ -466,24 +469,19 @@ bool SHtools_ESP32::WifiSetup()
   // desconecta WiFi
   if (WiFi.status() == WL_CONNECTED)
   {
-    WiFi.disconnect(wifiOFF, true);
+    WiFi.disconnect(WIFIradio_OFF, true);
     delayYield(2000);
   }
 
   // Configura o servidor AP
-  IPAddress local_ip(192, 168, 100, 100);
-  IPAddress local_mask(255, 255, 255, 0);
-  IPAddress gateway(192, 168, 100, 1);
-  String ssid = "192.168.100.100 -> " + generateSSID(); // Gera o SSID com identificador único
 
   // Aguarda a inicialização do servidor wifi
   printMSG("inicializando webserver.", true);
   unsigned long startTime = millis();  // Armazena o tempo de início
   const unsigned long timeout = 10000; // Tempo limite de 10 segundos
+  WiFi.persistent(false);              // Desativa a persistência das configurações do Wi-Fi para não desgastar a memoria flash
 
-  WiFi.persistent(false); // Desativa a persistência das configurações do Wi-Fi para não desgastar a memoria flash
-
-  while (!WiFi.softAP(ssid.c_str()))
+  while (!WiFi.softAP(gerarSSID()))
   {
     printMSG(".", false);
     delayYield(250);
@@ -497,41 +495,13 @@ bool SHtools_ESP32::WifiSetup()
   }
 
   // aplica as configurações
-  WiFi.softAPConfig(local_ip, gateway, local_mask);
+  WiFi.softAPConfig(rede_ip, rede_gateway, rede_mask);
 
-  printMSG("Access Point criado com sucesso.", true);
-  printMSG("SSID: ", false);
-  printMSG(ssid, true);
-  printMSG("IP do ESP32: ", false);
-  printMSG(WiFi.softAPIP().toString(), true);
+  printMSG("Access Point criado com sucesso!", true);
+  printMSG("SKETCH: " + nomeSketch, true);
+  printMSG("IP do ESP32: " + rede_ip.toString(), false);
 
   return true;
-}
-
-String SHtools_ESP32::generateSSID()
-{
-  uint64_t mac = ESP.getEfuseMac();   // Obtém o identificador único do ESP32
-  String uniqueID = String(mac, HEX); // Converte para uma string hexadecimal
-  uniqueID.toUpperCase();             // Opcional: converte para maiúsculas
-  return uniqueID;
-}
-
-// Getter para o server
-AsyncWebServer &SHtools_ESP32::get_server()
-{
-  return server;
-}
-
-// Getter para o websocket
-AsyncWebSocket &SHtools_ESP32::get_ws()
-{
-  return ws;
-}
-
-// Getter para ServerMode_ON
-bool SHtools_ESP32::get_ServerMode_ON() const
-{
-  return ServerMode_ON;
 }
 
 // Obtem informações da placa
@@ -729,8 +699,8 @@ void SHtools_ESP32::OTA_FirmwareUpdate(AsyncWebServerRequest *request, const Str
     // Faz restart para ativar novo firmware
     if (Update.isFinished())
     {
-      preferencias(1, PrefKey_novoFirmware, true);                // informa que houve update de firmware
-      DebugInicial = preferencias(1, PrefKey_debugInicial, true); // Ativa DebugInicial
+      preferencias(1, PrefKey_novoFirmware, true);                    // informa que houve update de firmware
+      ServerMod_AUTO = preferencias(1, PrefKey_serverMod_auto, true); // Ativa ServerMod_AUTO
 
       if (testarFirmwareSolicitado)
       {
@@ -781,7 +751,7 @@ bool SHtools_ESP32::preferencias(int8_t _opcao, const char *_chave, bool _valor)
   case -1: // monta _config se não estiver montado
     if (!config.isKey(PrefKey_configOK))
     {
-      config.putBool(PrefKey_debugInicial, false);
+      config.putBool(PrefKey_serverMod_auto, false);
       config.putBool(PrefKey_novoFirmware, false);
       config.putBool(PrefKey_testeNovoFirmware, false);
       config.putBool(PrefKey_fezRollback, false);
@@ -842,7 +812,7 @@ void SHtools_ESP32::printMSG(const String &_msg, bool newline, bool _debug)
     msg = msg + ":resultado=" + String((SerialCMD(msg.substring(4)) ? 1 : 0));
   }
 
-  if (ServerMode_ON)
+  if (ServerMod_ON)
     ws.textAll(msg); // Enviar para o WebSocket (serial remoto)
                      // não obedece "newline = false", cada envio é escrito em uma nova linha
 
@@ -860,22 +830,38 @@ void SHtools_ESP32::printMSG(const String &_msg, bool newline, bool _debug)
 bool SHtools_ESP32::SerialCMD(String _cmd)
 {
   // Verifica qual comando foi enviado
-  if (_cmd.equalsIgnoreCase("DebugInicial"))
+  if (_cmd.equalsIgnoreCase("Teste"))
   {
-    printMSG("Comando DebugInicial: " + String(DebugInicial) + " >>>>> " + String(!DebugInicial), true);
-    DebugInicial = preferencias(1, PrefKey_debugInicial, !DebugInicial);
+    printMSG(_cmd + ": ...teste ok...", true);
+    return true;
+  }
+  else if (_cmd.equalsIgnoreCase("ServerMod_AUTO?"))
+  {
+    printMSG(_cmd + " (estado): " + String(ServerMod_AUTO), true);
+    return true;
+  }
+  else if (_cmd.equalsIgnoreCase("ServerMod_AUTO"))
+  {
+    printMSG(_cmd + " (alterado): " + String(ServerMod_AUTO) + " >>>>> " + String(!ServerMod_AUTO), true);
+    ServerMod_AUTO = preferencias(1, PrefKey_serverMod_auto, !ServerMod_AUTO);
     delayYield();
     restartSolicitado = true;
     return true;
   }
-  else if (_cmd.equalsIgnoreCase("Teste"))
+  else if (_cmd.equalsIgnoreCase("msgDEBUG?"))
   {
-    printMSG("...teste...", true);
+    printMSG(_cmd + " (estado): " + String(HabilitarDebug), true);
+    return true;
+  }
+  else if (_cmd.equalsIgnoreCase("msgDEBUG"))
+  {
+    printMSG(_cmd + " (alterado): " + String(HabilitarDebug) + " >>>>> " + String(!HabilitarDebug), true);
+    HabilitarDebug = !HabilitarDebug;
     return true;
   }
   else
   {
-    printMSG("Comando desconhecido.", true);
+    printMSG(_cmd + ": Comando desconhecido.", true);
     return false; // Retorna false para comando não reconhecido
   }
 }
@@ -886,6 +872,36 @@ void SHtools_ESP32::printDEBUG(String _msg)
   {
     printMSG(_msg, true, true);
   }
+}
+
+const char *SHtools_ESP32::gerarSSID()
+{
+  static String result;
+  result = rede_ip.toString() + "->" + nomeSketch;
+  if (result.length() > 31)
+  {
+    result = result.substring(0, 31); // Trunca o resultado para 31 caracteres
+  }
+  result.toUpperCase();
+  return result.c_str();
+}
+
+// Getter para o server
+AsyncWebServer &SHtools_ESP32::get_server()
+{
+  return server;
+}
+
+// Getter para o websocket
+AsyncWebSocket &SHtools_ESP32::get_ws()
+{
+  return ws;
+}
+
+// Getter para ServerMod_ON
+bool SHtools_ESP32::get_ServerMod_ON() const
+{
+  return ServerMod_ON;
 }
 
 /// @brief Soft restart: Finaliza recusroso ativos e efetua restart do sistema

@@ -4,6 +4,13 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+# Para fazer exceto, tem antes que ignorar todos
+# Ignorar todos os arquivos:
+/include/*.*
+# Exceto arquivos:
+!*.h
+!*.py
+
 /logs
-/old-data
+/serverFiles_originais
 TO-DO.txt

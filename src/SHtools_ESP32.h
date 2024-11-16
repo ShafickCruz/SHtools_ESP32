@@ -43,12 +43,12 @@ public:
      * @note
      * @warning Não desligue o radio WiFi se for usar EspNow
      */
-    SHtools_ESP32(int _ledPin, int _buttonPin, String _nomeSketch, bool _wifiOFF = false);
+    SHtools_ESP32(int _ledPin, int _buttonPin, String _nomeSketch, bool _WIFIradio_OFF = false);
     void begin();  // like setup
     void handle(); // like loop
 
     bool HabilitarDebug;
-    bool get_ServerMode_ON() const;                                       // Método getter para ServerMode_ON
+    bool get_ServerMod_ON() const;                                        // Método getter para ServerMod_ON
     void printMSG(const String &_msg, bool newline, bool _debug = false); // Serial Monitor personalizado
     void printDEBUG(String _msg);
 
@@ -57,9 +57,10 @@ public:
     AsyncWebSocket &get_ws();
 
 private:
-    bool ServerMode_ON;
+    bool ServerMod_ON;
+    bool ServerMod_AUTO;
     bool restartSolicitado;
-    unsigned long ServerModeInicio;
+    unsigned long ServerModInicio;
     unsigned long buttonPressTime;
     unsigned long lastButtonStateChangeTime;
     unsigned long longPressDuration;
@@ -69,21 +70,24 @@ private:
     int ledPin;
     int buttonPin;
     String nomeSketch;
-    bool wifiOFF;
-    bool DebugInicial;
+    bool WIFIradio_OFF;
+    IPAddress rede_ip;
+    IPAddress rede_mask;
+    IPAddress rede_gateway;
     AsyncWebServer server; // Declaração do servidor como membro da classe
     AsyncWebSocket ws;     // Declaração do WebSocket como membro da classe
     Preferences config;    // instancia para configrações usando preferences
 
     String obterInformacoesPlaca();
     void bt_handle();
-    void startServerMode(bool _softRestart); // Tenta iniciar o servidor AP
-    bool ServerMode();
-    void ServerMode_handle();
+    void startServerMod(bool _softRestart); // Tenta iniciar o servidor AP
+    bool ServerMod();
+    void ServerMod_handle();
     bool SerialCMD(String _cmd);
     bool WifiSetup();
     void rotasEcallbacks();
-    String generateSSID(); // Gera SSID
+    // String generateSSID(); // Gera SSID
+    const char *SHtools_ESP32::gerarSSID();
     void ReiniciarESP(int _tempoDelay = 1000);
     void delayYield(unsigned long ms = 1000);
     void OTA_FirmwareUpdate(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final);
