@@ -81,25 +81,26 @@ void SHtools_ESP32::begin()
 
 void SHtools_ESP32::handle()
 {
+  // DEBUG
+  if (HabilitarDebug)
+  {
+    const int IntervaloTeste = 3000;
+    static unsigned long testeUltimoTempo = millis();
+
+    if ((millis() - testeUltimoTempo) >= IntervaloTeste)
+    {
+      printMSG("SERVERMODE ON = " + String(ServerMode_ON), true, true); // DEBUG
+      testeUltimoTempo = millis();
+    }
+  }
+  //
+
   /*
   Se estiver no modo Servidor, faz o LED piscar continuamente e processa as requisições. Se não estiver, verifica se debug inicial está habilitado.
   Se debug inicial estiver habilitado, inicia o processo de ServerMode e ignora o botão e se não estiver, keep watching o botão.
   */
   if (ServerMode_ON)
   {
-
-    if (HabilitarDebug) // DEBUG
-    {
-      const int IntervaloTeste = 3000;
-      static unsigned long testeUltimoTempo = millis();
-
-      if ((millis() - testeUltimoTempo) >= IntervaloTeste)
-      {
-        printMSG("SERVERMODE ON = " + String(ServerMode_ON), true, true); // DEBUG
-        testeUltimoTempo = millis();
-      }
-    }
-
     ServerMode_handle();
   }
   else
@@ -485,12 +486,12 @@ bool SHtools_ESP32::WifiSetup()
   unsigned long startTime = millis();  // Armazena o tempo de início
   const unsigned long timeout = 10000; // Tempo limite de 10 segundos
 
-  WiFi.persistent(false); // Desativa a persistência das configurações do Wi-Fi para proteger a memoria flash
+  // WiFi.persistent(false); // Desativa a persistência das configurações do Wi-Fi para proteger a memoria flash
 
   while (!WiFi.softAP(ssid.c_str()))
   {
     printMSG(".", false);
-    delayYield(100);
+    delayYield(250);
 
     // Verifica se o tempo limite foi atingido
     if (millis() - startTime > timeout)
